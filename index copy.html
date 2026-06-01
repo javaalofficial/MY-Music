@@ -1,0 +1,993 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="theme-color" content="#0b1220"/>
+  <meta name="mobile-web-app-capable" content="yes"/>
+  <meta name="apple-mobile-web-app-capable" content="yes"/>
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+  <title>Music Player Pro</title>
+  <style>
+    :root{
+      --bg:#0b1220;--panel:rgba(15,27,51,.72);--muted:#8fa8c8;--text:#eaf1ff;
+      --border:rgba(255,255,255,.10);--accent:#6c63ff;--accent2:#06b6d4;
+      --danger:#ef4444;--radius:14px;
+    }
+    *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;margin:0;padding:0}
+    body{background:var(--bg);background-image:radial-gradient(circle at 15% 30%,rgba(108,99,255,.18),transparent 50%),radial-gradient(circle at 85% 70%,rgba(6,182,212,.14),transparent 50%);background-attachment:fixed;color:var(--text);font-family:system-ui,-apple-system,sans-serif;font-size:14px;line-height:1.4;padding:12px 12px 80px;display:flex;justify-content:center;min-height:100vh;}
+    .app{width:min(600px,100%);display:flex;flex-direction:column;gap:12px}
+    header{text-align:center;padding:10px 0 4px}
+    header h1{font-size:20px;color:#fff;letter-spacing:-.3px}
+    header p{font-size:11px;color:var(--muted);margin-top:3px}
+    .nav-bar{display:flex;gap:5px;background:rgba(10,18,40,.9);padding:6px;border-radius:12px;border:1px solid var(--border);position:sticky;top:8px;z-index:90;backdrop-filter:blur(14px);}
+    .nav-btn{flex:1;background:transparent;border:none;color:var(--muted);padding:10px 4px;font-size:11px;font-weight:600;border-radius:8px;cursor:pointer;text-align:center;transition:.15s;}
+    .nav-btn.active{background:var(--accent);color:#fff}
+    .sec{display:none;flex-direction:column;gap:12px}
+    .sec.active{display:flex}
+    .panel{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);padding:14px;display:flex;flex-direction:column;gap:10px;}
+    .panel-title{font-weight:700;font-size:13px;color:#fff;border-left:3px solid var(--accent2);padding-left:8px}
+    .btn{background:rgba(255,255,255,.06);border:1px solid var(--border);color:var(--text);padding:9px 13px;border-radius:9px;cursor:pointer;font-size:12px;font-weight:500;display:inline-flex;align-items:center;justify-content:center;gap:5px;transition:.15s;white-space:nowrap;}
+    .btn:active{transform:scale(.96)}
+    .btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+    .btn.accent2{background:var(--accent2);border-color:var(--accent2);color:#fff}
+    .btn.danger{background:rgba(239,68,68,.12);border-color:rgba(239,68,68,.3);color:var(--danger)}
+    .btn.on{background:rgba(108,99,255,.3);border-color:var(--accent);color:#c4bfff}
+    input[type=text],select{background:rgba(0,0,0,.3);border:1px solid var(--border);color:var(--text);padding:9px 10px;border-radius:8px;font-size:12px;outline:none;font-family:inherit;}
+    input[type=text]::placeholder{color:var(--muted)}
+    .now-playing{background:rgba(0,0,0,.22);padding:18px 16px;border-radius:12px;text-align:center;border:1px solid var(--border);}
+    .song-title{font-size:17px;font-weight:700;color:#fff;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-bottom:4px}
+    .song-status{font-size:11px;color:var(--accent2);font-weight:500}
+    .main-controls{display:flex;align-items:center;justify-content:center;gap:16px;margin:14px 0 10px}
+    .ctrl-btn{width:48px;height:48px;border-radius:50%;background:rgba(255,255,255,.06);border:1px solid var(--border);color:#fff;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:.15s;}
+    .ctrl-btn:active{transform:scale(.92)}
+    .ctrl-btn.main-play{background:var(--accent);border-color:var(--accent);transform:scale(1.12);font-size:20px}
+    .ctrl-btn.main-play:active{transform:scale(1.05)}
+    .slider-row{display:flex;align-items:center;gap:8px;font-size:11px;color:var(--muted)}
+    .slider-row input[type=range]{flex:1;accent-color:var(--accent);height:4px;cursor:pointer}
+    input[type=range]{width:100%;accent-color:var(--accent);cursor:pointer}
+    .mode-row{display:flex;align-items:center;justify-content:space-between;gap:6px;flex-wrap:wrap;background:rgba(0,0,0,.14);padding:10px;border-radius:10px;}
+    .mode-row .left-modes{display:flex;gap:6px;flex-wrap:wrap}
+    .vol-row{display:flex;align-items:center;gap:6px;font-size:12px}
+    .vol-row input{width:70px}
+    .repeat-wrap{position:relative;display:inline-block}
+    .repeat-picker{display:none;flex-direction:column;gap:4px;position:absolute;bottom:calc(100% + 6px);left:0;background:rgba(8,16,36,.98);border:1px solid var(--border);border-radius:10px;padding:8px;z-index:300;min-width:185px;box-shadow:0 8px 28px rgba(0,0,0,.6);}
+    .repeat-picker.open{display:flex}
+    .rep-opt{background:transparent;border:none;color:var(--text);padding:8px 10px;font-size:12px;cursor:pointer;text-align:left;border-radius:6px;font-family:inherit;width:100%;}
+    .rep-opt:hover,.rep-opt.sel{background:rgba(108,99,255,.28);color:#fff}
+    .rep-n-row{display:flex;align-items:center;gap:6px;padding:4px 10px;font-size:12px;color:var(--muted)}
+    .rep-n-row input{width:52px;padding:4px 6px;font-size:12px;border-radius:6px;background:rgba(0,0,0,.4);border:1px solid var(--border);color:var(--text)}
+    .album-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px}
+    .album-box{background:rgba(255,255,255,.03);border:1px solid var(--border);padding:10px;border-radius:10px;display:flex;flex-direction:column;gap:7px;}
+    .album-box.active{border-color:var(--accent2);background:rgba(6,182,212,.09)}
+    .album-name{font-size:12px;font-weight:600;color:#fff;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .album-count{font-size:11px;color:var(--muted)}
+    .album-actions{display:flex;justify-content:space-between;align-items:center}
+    .filter-badge{display:none;padding:9px 12px;background:rgba(6,182,212,.13);border-radius:8px;font-size:12px;align-items:center;justify-content:space-between;gap:8px;}
+    .filter-badge.show{display:flex}
+    .list-wrap{display:flex;flex-direction:column;gap:6px}
+    .item-card{display:flex;align-items:center;justify-content:space-between;padding:10px 12px;background:rgba(255,255,255,.02);border:1px solid var(--border);border-radius:9px;gap:8px;}
+    .item-card.active{background:rgba(108,99,255,.13);border-color:var(--accent)}
+    .item-info{flex:1;min-width:0;cursor:pointer}
+    .item-title{font-size:12px;font-weight:500;color:#fff;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .item-dur{font-size:11px;color:var(--muted);margin-top:2px}
+    .item-actions{display:flex;align-items:center;gap:5px;flex-shrink:0}
+    .toast{position:fixed;bottom:76px;left:50%;transform:translateX(-50%);background:#fff;color:#000;font-weight:600;padding:9px 16px;border-radius:20px;font-size:12px;z-index:999;opacity:0;pointer-events:none;transition:opacity .2s;box-shadow:0 4px 14px rgba(0,0,0,.35);white-space:nowrap;max-width:90vw;text-align:center;}
+    .toast.show{opacity:1}
+    .goto-top{position:fixed;bottom:22px;right:16px;background:var(--accent2);color:#fff;border:none;width:40px;height:40px;border-radius:50%;font-size:16px;cursor:pointer;z-index:99;box-shadow:0 4px 12px rgba(0,0,0,.4);display:none;align-items:center;justify-content:center;}
+    .empty-hint{text-align:center;padding:20px;color:var(--muted);font-size:12px}
+    .row{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+    .grow{flex:1}
+  </style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <h1>&#127925; Music Player Pro</h1>
+    <p>Penyimpanan permanen &middot; Offline &middot; Install di HP</p>
+  </header>
+  <div class="nav-bar">
+    <button class="nav-btn active" id="nav-player"   onclick="goSec('sec-player',this)">&#9654;&#65039; Putar</button>
+    <button class="nav-btn"        id="nav-playlist" onclick="goSec('sec-playlist',this)">&#128194; Lagu</button>
+    <button class="nav-btn"        id="nav-plugins"  onclick="goSec('sec-plugins',this)">&#129513; Plugin</button>
+    <button class="nav-btn"        id="nav-extra"    onclick="goSec('sec-extra',this)">&#10024; Extra</button>
+  </div>
+
+  <!-- SEC 1: PLAYER -->
+  <div id="sec-player" class="sec active">
+    <div class="panel">
+      <div class="now-playing">
+        <div class="song-title" id="nowSong">Belum ada lagu dipilih</div>
+        <div class="song-status" id="nowStatus">Tambahkan lagu di tab Lagu</div>
+      </div>
+      <div class="main-controls">
+        <button class="ctrl-btn" onclick="prevTrack()">&#9198;</button>
+        <button class="ctrl-btn main-play" id="playBtn" onclick="playPause()">&#9654;&#65039;</button>
+        <button class="ctrl-btn" onclick="nextTrack()">&#9197;</button>
+      </div>
+      <div class="slider-row">
+        <span id="curTime">00:00</span>
+        <input type="range" id="seekBar" min="0" max="1000" value="0" oninput="seekAudio(this.value)"/>
+        <span id="durTime">00:00</span>
+      </div>
+      <div class="mode-row">
+        <div class="left-modes">
+          <button class="btn" id="shuffleBtn" onclick="cycleShuffle()">&#128256; Normal</button>
+          <div class="repeat-wrap" id="repeatWrap">
+            <button class="btn" id="repeatBtn" onclick="toggleRepeatPicker()">&#128257; Mati</button>
+            <div class="repeat-picker" id="repeatPicker">
+              <button class="rep-opt sel" onclick="setRepeat('off')">&#128257; Mati</button>
+              <button class="rep-opt" onclick="setRepeat('one')">&#128258; Ulangi 1 Lagu</button>
+              <div class="rep-n-row" id="repNRow" style="display:none">
+                <span>Berapa kali?</span>
+                <input type="number" id="repNInput" value="2" min="2" max="999" oninput="updateRepeatN()"/>
+                <span>x</span>
+              </div>
+              <button class="rep-opt" onclick="setRepeat('album')">&#128193; Ulangi 1 Album</button>
+              <button class="rep-opt" onclick="setRepeat('all')">&#128257; Ulangi Semua</button>
+            </div>
+          </div>
+        </div>
+        <div class="vol-row">
+          <span>&#128266;</span>
+          <input type="range" id="volBar" min="0" max="100" value="100" oninput="changeVolume(this.value)"/>
+          <span id="volVal">100%</span>
+        </div>
+      </div>
+    </div>
+    <div class="panel" style="padding:10px 14px">
+      <div id="androidTips" style="display:none;font-size:11px;color:var(--muted);display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap">
+        <span>💡 Android Chrome: ketuk ⋮ &rarr; <b>Tambahkan ke layar utama</b></span>
+        <button class="btn" id="installBtn" onclick="triggerInstall()" style="display:none">&#11015;&#65039; Install</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- SEC 2: PLAYLIST -->
+  <div id="sec-playlist" class="sec">
+    <div class="panel">
+      <div class="panel-title">Custom Album</div>
+      <div class="album-grid" id="albumGrid"></div>
+      <div class="row" style="margin-top:2px">
+        <input type="text" id="newAlbumName" placeholder="Nama album baru..." class="grow"/>
+        <button class="btn primary" onclick="createAlbum()">Buat</button>
+      </div>
+      <div class="filter-badge" id="filterBadge">
+        <span id="filterText">Album aktif</span>
+        <button class="btn danger" style="padding:4px 8px;font-size:11px" onclick="resetFilter()">Reset</button>
+      </div>
+    </div>
+    <div class="panel">
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px">
+        <div class="panel-title">Semua Lagu (<span id="songCount">0</span>)</div>
+        <div class="row">
+          <label class="btn primary" for="fileInput" style="padding:6px 10px;font-size:11px">&#10133; File</label>
+          <input id="fileInput" type="file" accept="audio/*" multiple style="display:none" onchange="uploadAudio(this.files)"/>
+          <label class="btn accent2" for="folderInput" style="padding:6px 10px;font-size:11px">&#128193; Folder</label>
+          <input id="folderInput" type="file" webkitdirectory directory multiple style="display:none" onchange="uploadAudio(this.files)"/>
+        </div>
+      </div>
+      <div class="row" style="margin-top:8px;margin-bottom:4px;gap:8px;flex-wrap:wrap">
+        <button class="btn accent2" id="bulkModeSongsBtn" onclick="_toggleSongBulkMode()" style="padding:6px 10px;font-size:11px">&#128203; Mode Bulk</button>
+        <button class="btn danger" id="bulkDeleteSongsBtn" style="display:none;flex:1;padding:6px 10px;font-size:11px" onclick="_bulkDeleteSongs()">&#128465;&#65039; Hapus Terpilih</button>
+      </div>
+      <div style="font-size:11px;color:var(--muted);margin-bottom:8px;line-height:1.4;position:relative;padding-right:24px;">
+        <button onclick="this.parentNode.style.display='none'" style="position:absolute;top:0;right:0;border:none;background:none;color:var(--muted);font-size:14px;cursor:pointer;line-height:1">×</button>
+        Aktifkan mode bulk dulu, centang lagu yang ingin dihapus, lalu tekan Hapus Terpilih. Jika penghapusan gagal, coba refresh halaman atau periksa izin penyimpanan browser.
+      </div>
+      <div class="list-wrap" id="mainList">
+        <div class="empty-hint">Daftar kosong. Klik "+ File" atau "Folder".</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SEC 3: PLUGINS -->
+  <div id="sec-plugins" class="sec">
+    <div class="panel">
+      <div class="panel-title">Manajer Plugin</div>
+      <p style="font-size:12px;color:var(--muted)">Upload file .js untuk menambahkan fitur. Plugin tersimpan permanen dan aktif otomatis setiap kali app dibuka.</p>
+      <div id="pluginInfoSection" style="display:none">
+        <div style="font-size:12px;color:var(--muted);background:rgba(0,0,0,.2);padding:10px;border-radius:8px;line-height:1.7">
+          <b style="color:var(--text)">Format plugin:</b><br>
+          <code style="color:var(--accent2)">window.MusicPlugins.register({<br>
+          &nbsp;&nbsp;id: 'nama-plugin',<br>
+          &nbsp;&nbsp;name: 'Nama Plugin',<br>
+          &nbsp;&nbsp;init: function(api) {<br>
+          &nbsp;&nbsp;&nbsp;&nbsp;// api.getAudio(), api.getState()<br>
+          &nbsp;&nbsp;&nbsp;&nbsp;// api.addPluginPanel(id, judul, fn)<br>
+          &nbsp;&nbsp;&nbsp;&nbsp;// api.showNotification(msg)<br>
+          &nbsp;&nbsp;}<br>
+          });</code><br><br><b style="color:#0f0">✓ Contoh plugin mini (copy ke file .js):</b><br>
+          <code style="color:var(--accent2); font-size:10px; display:block; margin:4px 0; background:rgba(0,0,0,.3); padding:4px; border-radius:3px; overflow-x:auto;">window.MusicPlugins.register({id:'demo',name:'Demo',init:function(api){var s=api.getState();api.showNotification('Lagu: '+s.playlist.length);api.addPluginPanel('demo-p','Status',function(c){c.innerHTML='&lt;b&gt;'+s.playlist.length+'&lt;/b&gt; lagu'});}});</code>
+        </div>
+        <div style="font-size:11px;color:var(--muted);background:rgba(108,99,255,.08);padding:8px;border-radius:8px;margin-top:10px;border-left:3px solid var(--accent)">
+          <b style="color:#0f0">✓ Plugin VALID:</b> Skrip JavaScript biasa dengan window.MusicPlugins.register()<br>
+          <b style="color:var(--danger)">✗ Plugin TIDAK VALID:</b> File dengan import/export, top-level await, atau tanpa .register()
+        </div>
+      </div>
+      <label class="btn primary" for="pluginInput" style="text-align:center;width:100%">&#128299; Upload &amp; Pasang Plugin (.js)</label>
+      <input id="pluginInput" type="file" accept=".js" multiple style="display:none" onchange="uploadPlugin(this.files)"/>
+      <div class="panel-title" style="margin-top:4px">Diagnostik Plugin & Pemutar:</div>
+      <div class="list-wrap" id="diagnosticList">
+        <div class="empty-hint">Belum ada masalah terdeteksi.</div>
+      </div>
+      <div class="panel-title" style="margin-top:4px">Plugin Terpasang:</div>
+      <div class="row" style="margin-bottom:4px;gap:8px;flex-wrap:wrap">
+        <button class="btn accent2" id="bulkModePluginsBtn" onclick="_togglePluginBulkMode()" style="padding:6px 10px;font-size:11px">&#128203; Mode Bulk</button>
+        <button class="btn danger" id="bulkDeletePluginsBtn" style="display:none;flex:1;padding:6px 10px;font-size:11px" onclick="_bulkDeletePlugins()">&#128465;&#65039; Hapus Terpilih</button>
+      </div>
+      <div style="font-size:11px;color:var(--muted);margin-bottom:8px;line-height:1.4;position:relative;padding-right:24px;">
+        <button onclick="this.parentNode.style.display='none'" style="position:absolute;top:0;right:0;border:none;background:none;color:var(--muted);font-size:14px;cursor:pointer;line-height:1">×</button>
+        Aktifkan mode bulk untuk pilih plugin. Setelah penghapusan plugin, halaman akan dimuat ulang agar daftar plugin dan state sinkron.
+      </div>
+      <div class="list-wrap" id="pluginList">
+        <div class="empty-hint">Belum ada plugin terpasang.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SEC 4: EXTRA -->
+  <div id="sec-extra" class="sec">
+    <div id="extraContainer">
+      <div class="panel" style="padding:24px;text-align:center;color:var(--muted);font-size:12px">
+        Belum ada UI tambahan dari plugin aktif.
+      </div>
+    </div>
+  </div>
+</div>
+
+<button class="goto-top" id="gotoTop" onclick="window.scrollTo({top:0,behavior:'smooth'})">&#9650;</button>
+<audio id="coreAudio" preload="metadata"></audio>
+<div class="toast" id="toast"></div>
+
+<script>
+/*
+ * ARSITEKTUR PLUGIN YANG BENAR:
+ * ============================================================
+ * 1. appApi didefinisikan DULU sebelum MusicPlugins dan bootPlugins
+ * 2. Plugin dieksekusi: new Function('appApi', code)(appApi)
+ *    -> appApi tersedia sebagai variabel lokal di dalam kode plugin
+ * 3. window.MusicPlugins juga tersedia untuk .register()
+ * 4. SATU IndexedDB saja (MusicProDB4) dengan store: tracks + plugins
+ * ============================================================
+ */
+
+/* NAV */
+function goSec(id, btn) {
+  document.querySelectorAll('.sec').forEach(el => el.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(el => el.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  btn.classList.add('active');
+  window.scrollTo({top:0});
+}
+window.addEventListener('scroll', () => {
+  document.getElementById('gotoTop').style.display = window.scrollY > 160 ? 'flex' : 'none';
+});
+
+/* TOAST */
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+/* STATE */
+const audio = document.getElementById('coreAudio');
+let masterSongs  = [];
+let displaySongs = [];
+let currentIndex = -1;
+let activeAlbumId = null;
+let cachedBlobUrl = null;
+let shuffleMode = 'off';
+let repeatMode  = 'off';
+let repeatN     = 2;
+let repeatNCount = 0;
+let diagnosticIssues = [];
+let pluginUploadError = false;
+let selectedSongs = new Set();
+let selectedPlugins = new Set();
+let songBulkMode = false;
+let pluginBulkMode = false;
+let currentPlugins = [];
+
+function _showPluginInfo(show) {
+  var el = document.getElementById('pluginInfoSection');
+  if (el) el.style.display = show ? 'block' : 'none';
+}
+
+function _updateAndroidTips() {
+  var tips = document.getElementById('androidTips');
+  if (tips) tips.style.display = masterSongs.length ? 'none' : 'flex';
+}
+
+function _toggleSongSelect(id) {
+  if (selectedSongs.has(id)) selectedSongs.delete(id);
+  else selectedSongs.add(id);
+  _renderList();
+  _updateBulkButtons();
+}
+
+function _togglePluginSelect(id) {
+  if (selectedPlugins.has(id)) selectedPlugins.delete(id);
+  else selectedPlugins.add(id);
+  _renderPluginList(currentPlugins);
+  _updateBulkButtons();
+}
+
+function _toggleSongBulkMode() {
+  songBulkMode = !songBulkMode;
+  if (!songBulkMode) selectedSongs.clear();
+  _renderList();
+  _updateBulkButtons();
+}
+
+function _togglePluginBulkMode() {
+  pluginBulkMode = !pluginBulkMode;
+  if (!pluginBulkMode) selectedPlugins.clear();
+  _renderPluginList(currentPlugins);
+  _updateBulkButtons();
+}
+
+function _bulkDeleteSongs() {
+  if (!selectedSongs.size) { showToast('Tidak ada lagu dipilih.'); return; }
+  if (!confirm('Hapus ' + selectedSongs.size + ' lagu terpilih secara permanen?')) return;
+  var tx = db.transaction('tracks','readwrite');
+  var store = tx.objectStore('tracks');
+  selectedSongs.forEach(function(id) {
+    store.delete(id);
+  });
+  tx.onerror = function(e) {
+    showToast('Gagal menghapus lagu.');
+    _addDiagnostic('Gagal menghapus lagu dari IndexedDB: ' + (e.target.error && e.target.error.message ? e.target.error.message : 'error tidak diketahui') + '. Pastikan IndexedDB tidak sedang diblokir.');
+  };
+  tx.onabort = function(e) {
+    showToast('Transaksi penghapusan lagu dibatalkan.');
+    _addDiagnostic('Transaksi penghapusan lagu dibatalkan. Tutup tab lain atau refresh jika terjadi batasan penyimpanan.');
+  };
+  tx.oncomplete = function() {
+    masterSongs = masterSongs.filter(function(s) { return !selectedSongs.has(s.id); });
+    var delCount = selectedSongs.size;
+    selectedSongs.clear();
+    _applyFilter();
+    _updateBulkButtons();
+    showToast(delCount + ' lagu dihapus.');
+  };
+}
+
+function _bulkDeletePlugins() {
+  if (!selectedPlugins.size) { showToast('Tidak ada plugin dipilih.'); return; }
+  if (!confirm('Hapus ' + selectedPlugins.size + ' plugin terpilih? Halaman akan dimuat ulang.')) return;
+  var tx = db.transaction('plugins','readwrite');
+  var store = tx.objectStore('plugins');
+  selectedPlugins.forEach(function(id) {
+    store.delete(id);
+  });
+  tx.onerror = function(e) {
+    showToast('Gagal menghapus plugin.');
+    _addDiagnostic('Gagal menghapus plugin dari IndexedDB: ' + (e.target.error && e.target.error.message ? e.target.error.message : 'error tidak diketahui') + '. Pastikan IndexedDB tidak sedang diblokir.');
+  };
+  tx.onabort = function(e) {
+    showToast('Transaksi penghapusan plugin dibatalkan.');
+    _addDiagnostic('Transaksi penghapusan plugin dibatalkan. Tutup tab lain atau refresh jika terjadi batasan penyimpanan.');
+  };
+  tx.oncomplete = function() { location.reload(); };
+}
+
+function _updateBulkButtons() {
+  var songBulkBtn = document.getElementById('bulkDeleteSongsBtn');
+  if (songBulkBtn) songBulkBtn.style.display = songBulkMode && selectedSongs.size > 0 ? 'inline-flex' : 'none';
+  var pluginBulkBtn = document.getElementById('bulkDeletePluginsBtn');
+  if (pluginBulkBtn) pluginBulkBtn.style.display = pluginBulkMode && selectedPlugins.size > 0 ? 'inline-flex' : 'none';
+  var songModeBtn = document.getElementById('bulkModeSongsBtn');
+  if (songModeBtn) songModeBtn.textContent = songBulkMode ? '✕ Batal Bulk Lagu' : '📋 Mode Bulk';
+  var pluginModeBtn = document.getElementById('bulkModePluginsBtn');
+  if (pluginModeBtn) pluginModeBtn.textContent = pluginBulkMode ? '✕ Batal Bulk Plugin' : '📋 Mode Bulk';
+}
+
+function _toggleSongBulkMode() {
+  songBulkMode = !songBulkMode;
+  if (!songBulkMode) selectedSongs.clear();
+  _renderList();
+  _updateBulkButtons();
+}
+
+function _togglePluginBulkMode() {
+  pluginBulkMode = !pluginBulkMode;
+  if (!pluginBulkMode) selectedPlugins.clear();
+  _renderPluginList(currentPlugins);
+  _updateBulkButtons();
+}
+
+function _addDiagnostic(message) {
+  if (!message) return;
+  var normalized = String(message).trim();
+  if (!normalized) return;
+  if (diagnosticIssues.includes(normalized)) return;
+  diagnosticIssues.push(normalized);
+  _renderDiagnostics();
+  console.warn('[Diagnostik]', normalized);
+}
+
+function _renderDiagnostics() {
+  var area = document.getElementById('diagnosticList');
+  if (!area) return;
+  area.innerHTML = '';
+  if (!diagnosticIssues.length) {
+    area.innerHTML = '<div class="empty-hint">Belum ada masalah terdeteksi.</div>';
+    return;
+  }
+  diagnosticIssues.forEach(function(issue) {
+    var item = document.createElement('div');
+    item.className = 'item-card';
+    item.style.background = 'rgba(239,68,68,.06)';
+    item.style.borderColor = 'rgba(239,68,68,.2)';
+    item.style.color = 'var(--text)';
+    item.style.fontSize = '11px';
+    item.textContent = issue;
+    area.appendChild(item);
+  });
+}
+
+function _clearDiagnostics() {
+  diagnosticIssues = [];
+  _renderDiagnostics();
+}
+
+/* INDEXEDDB — SATU KONEKSI SAJA */
+let db = null;
+(function() {
+  if (!window.indexedDB) {
+    _addDiagnostic('Browser tidak mendukung IndexedDB. Plugin dan lagu tidak dapat disimpan.');
+  }
+  var req = indexedDB.open('MusicProDB4', 1);
+  req.onupgradeneeded = function(e) {
+    var d = e.target.result;
+    if (!d.objectStoreNames.contains('tracks'))
+      d.createObjectStore('tracks', {keyPath:'id'});
+    if (!d.objectStoreNames.contains('plugins'))
+      d.createObjectStore('plugins', {keyPath:'id'});
+  };
+  req.onerror = function(e) {
+    showToast('IndexedDB gagal dibuka!');
+    _addDiagnostic('IndexedDB gagal dibuka: ' + (e.target.error && e.target.error.message ? e.target.error.message : 'error tidak diketahui') + '. Solusi: jalankan halaman lewat server http(s), gunakan browser modern, atau periksa izin penyimpanan.');
+  };
+  req.onblocked = function() {
+    showToast('IndexedDB terblokir! Tutup tab lain dan muat ulang.');
+    _addDiagnostic('IndexedDB terblokir oleh tab lain. Tutup tab lain yang memakai database ini.');
+  };
+  req.onsuccess = function(e) {
+    db = e.target.result;
+    if (!db) {
+      showToast('Database tidak tersedia');
+      _addDiagnostic('Database IndexedDB tidak tersedia setelah berhasil membuka koneksi.');
+      return;
+    }
+    _loadSongs();
+    _bootPlugins();
+  };
+})();
+
+/* SONGS */
+function _loadSongs() {
+  if (!db) {
+    _addDiagnostic('Database belum siap saat mencoba memuat lagu.');
+    return;
+  }
+  var req = db.transaction('tracks','readonly').objectStore('tracks').getAll();
+  req.onsuccess = function(e) {
+      masterSongs = e.target.result || [];
+      _applyFilter();
+    };
+  req.onerror = function(e) {
+      _addDiagnostic('Gagal memuat lagu dari IndexedDB: ' + (e.target.error && e.target.error.message ? e.target.error.message : 'error tidak diketahui') + '. Solusi: refresh halaman atau gunakan browser lain jika IndexedDB dibatasi.');
+      _applyFilter();
+    };
+}
+
+async function uploadAudio(fileList) {
+  if (!db) { showToast('Database belum siap'); return; }
+  var valid = Array.from(fileList).filter(function(f) {
+    return f.type.startsWith('audio/') || /\.(mp3|wav|m4a|ogg|aac|flac)$/i.test(f.name);
+  });
+  if (!valid.length) { showToast('Tidak ada file audio valid!'); return; }
+  showToast('Menyimpan ' + valid.length + ' lagu...');
+  var tx = db.transaction('tracks','readwrite');
+  var store = tx.objectStore('tracks');
+  valid.forEach(function(f) {
+    var track = {
+      id: 'tr_' + Date.now() + '_' + Math.random().toString(36).slice(2,8),
+      name: f.name.replace(/\.[^/.]+$/,''),
+      fileBlob: f,
+      duration: null
+    };
+    store.add(track);
+    masterSongs.push(track);
+  });
+  tx.oncomplete = function() { _applyFilter(); showToast(valid.length + ' lagu tersimpan permanen!'); };
+  document.getElementById('fileInput').value = '';
+  document.getElementById('folderInput').value = '';
+}
+
+function deleteSong(id) {
+  if (!confirm('Hapus lagu ini secara permanen?')) return;
+  var tx = db.transaction('tracks','readwrite');
+  tx.objectStore('tracks').delete(id);
+  tx.oncomplete = function() {
+    masterSongs = masterSongs.filter(function(s) { return s.id !== id; });
+    var albums = _getAlbums();
+    albums.forEach(function(a) { a.songIds = a.songIds.filter(function(s) { return s !== id; }); });
+    _saveAlbums(albums);
+    if (displaySongs[currentIndex] && displaySongs[currentIndex].id === id) {
+      audio.pause(); currentIndex = -1;
+      document.getElementById('nowSong').textContent   = 'Belum ada lagu dipilih';
+      document.getElementById('nowStatus').textContent = 'Lagu aktif telah dihapus';
+      document.getElementById('playBtn').textContent   = String.fromCodePoint(9654,65039);
+    }
+    _applyFilter(); showToast('Lagu dihapus.');
+  };
+}
+
+/* PLAYER */
+function playTrack(idx) {
+  if (idx < 0 || idx >= displaySongs.length) return;
+  currentIndex = idx; repeatNCount = 0;
+  var song = displaySongs[idx];
+  document.getElementById('nowSong').textContent   = song.name;
+  document.getElementById('nowStatus').textContent = 'Memuat...';
+  if (cachedBlobUrl) URL.revokeObjectURL(cachedBlobUrl);
+  cachedBlobUrl = URL.createObjectURL(song.fileBlob);
+  audio.src = cachedBlobUrl; audio.load();
+  audio.play()
+    .then(function() {
+      document.getElementById('nowStatus').textContent = _playLabel();
+      document.getElementById('playBtn').textContent   = String.fromCodePoint(9208);
+    })
+    .catch(function(error) {
+      document.getElementById('nowStatus').textContent = 'Tap tombol play';
+      document.getElementById('playBtn').textContent   = String.fromCodePoint(9654,65039);
+      _addDiagnostic('Audio tidak bisa diputar secara otomatis. Periksa izin autoplay atau tekan tombol play. ' + (error && error.message ? error.message : ''));    
+    });
+  _renderList();
+  if ('mediaSession' in navigator) {
+    try {
+      navigator.mediaSession.metadata = new MediaMetadata({title: song.name, artist: 'Local File'});
+      navigator.mediaSession.setActionHandler('play',          playPause);
+      navigator.mediaSession.setActionHandler('pause',         playPause);
+      navigator.mediaSession.setActionHandler('nexttrack',     nextTrack);
+      navigator.mediaSession.setActionHandler('previoustrack', prevTrack);
+    } catch(e) {}
+  }
+}
+
+function _playLabel() {
+  var s = 'Sedang memutar';
+  if (shuffleMode === 'album') s += ' \u00b7 Acak Album';
+  else if (shuffleMode === 'all') s += ' \u00b7 Acak Semua';
+  if (repeatMode === 'one')   s += ' \u00b7 x' + repeatN;
+  else if (repeatMode === 'album') s += ' \u00b7 Ulangi Album';
+  else if (repeatMode === 'all')   s += ' \u00b7 Ulangi Semua';
+  return s;
+}
+
+function playPause() {
+  if (!displaySongs.length) { showToast('Tambahkan lagu dulu'); return; }
+  if (currentIndex === -1) { playTrack(0); return; }
+  if (audio.paused) {
+    audio.play();
+    document.getElementById('playBtn').textContent   = String.fromCodePoint(9208);
+    document.getElementById('nowStatus').textContent = _playLabel();
+  } else {
+    audio.pause();
+    document.getElementById('playBtn').textContent   = String.fromCodePoint(9654,65039);
+    document.getElementById('nowStatus').textContent = 'Jeda';
+  }
+}
+
+function nextTrack() {
+  if (!displaySongs.length) return;
+  var len = displaySongs.length;
+  if (shuffleMode !== 'off') {
+    var r = currentIndex;
+    if (len > 1) { while (r === currentIndex) r = Math.floor(Math.random() * len); }
+    playTrack(r);
+  } else {
+    var n = currentIndex + 1;
+    if (n >= len) {
+      if (repeatMode === 'all' || (repeatMode === 'album' && activeAlbumId)) playTrack(0);
+      else { audio.pause(); document.getElementById('playBtn').textContent = String.fromCodePoint(9654,65039); document.getElementById('nowStatus').textContent = 'Selesai'; }
+    } else playTrack(n);
+  }
+}
+
+function prevTrack() {
+  if (!displaySongs.length) return;
+  if (audio.currentTime > 4) { audio.currentTime = 0; return; }
+  var p = currentIndex - 1;
+  if (p < 0) {
+    if (repeatMode === 'all' || (repeatMode === 'album' && activeAlbumId)) playTrack(displaySongs.length - 1);
+    else audio.currentTime = 0;
+  } else playTrack(p);
+}
+
+audio.addEventListener('timeupdate', function() {
+  document.getElementById('curTime').textContent = _fmt(audio.currentTime);
+  if (audio.duration) document.getElementById('seekBar').value = (audio.currentTime / audio.duration) * 1000;
+});
+audio.addEventListener('loadedmetadata', function() {
+  document.getElementById('durTime').textContent = _fmt(audio.duration);
+  if (currentIndex >= 0 && displaySongs[currentIndex]) {
+    displaySongs[currentIndex].duration = _fmt(audio.duration);
+    _renderList();
+  }
+});
+audio.addEventListener('ended', function() {
+  if (repeatMode === 'one') {
+    repeatNCount++;
+    if (repeatNCount < repeatN) { audio.currentTime = 0; audio.play(); }
+    else { repeatNCount = 0; nextTrack(); }
+  } else nextTrack();
+});
+audio.addEventListener('error', function() {
+  var err = audio.error;
+  var msg = 'Terjadi kesalahan audio.';
+  if (err) {
+    msg += ' Code=' + err.code;
+    if (err.message) msg += ' ' + err.message;
+  }
+  showToast(msg);
+  _addDiagnostic('Audio playback error: ' + msg);
+});
+
+function seekAudio(v)    { if (audio.duration) audio.currentTime = (v/1000)*audio.duration; }
+function changeVolume(v) { audio.volume = v/100; document.getElementById('volVal').textContent = v + '%'; }
+function _fmt(s) {
+  if (!isFinite(s)||isNaN(s)) return '00:00';
+  return String(Math.floor(s/60)).padStart(2,'0')+':'+String(Math.floor(s%60)).padStart(2,'0');
+}
+
+/* SHUFFLE */
+var _SMODES  = ['off','album','all'];
+var _SLABELS = {off:'Normal', album:'Acak Album', all:'Acak Semua'};
+function cycleShuffle() {
+  shuffleMode = _SMODES[(_SMODES.indexOf(shuffleMode)+1) % _SMODES.length];
+  var btn = document.getElementById('shuffleBtn');
+  btn.textContent = String.fromCodePoint(128256) + ' ' + _SLABELS[shuffleMode];
+  btn.className   = 'btn' + (shuffleMode !== 'off' ? ' on' : '');
+  showToast('Shuffle: ' + _SLABELS[shuffleMode]);
+}
+
+/* REPEAT */
+function toggleRepeatPicker() { document.getElementById('repeatPicker').classList.toggle('open'); }
+document.addEventListener('click', function(e) {
+  var w = document.getElementById('repeatWrap');
+  if (w && !w.contains(e.target)) document.getElementById('repeatPicker').classList.remove('open');
+});
+
+function setRepeat(mode) {
+  repeatMode = mode;
+  var btn  = document.getElementById('repeatBtn');
+  var nRow = document.getElementById('repNRow');
+  document.querySelectorAll('.rep-opt').forEach(function(el) { el.classList.remove('sel'); });
+  var opts = document.querySelectorAll('.rep-opt');
+  var map  = {off:0, one:1, album:2, all:3};
+  if (opts[map[mode]]) opts[map[mode]].classList.add('sel');
+  nRow.style.display = (mode === 'one') ? 'flex' : 'none';
+  if (mode === 'off')   { btn.textContent = String.fromCodePoint(128257)+' Mati';         btn.className = 'btn'; }
+  else if (mode==='one')  { repeatN = Math.max(2, parseInt(document.getElementById('repNInput').value)||2); btn.textContent = String.fromCodePoint(128258)+' x'+repeatN; btn.className='btn on'; }
+  else if (mode==='album'){ btn.textContent = String.fromCodePoint(128193)+' Ulangi Album'; btn.className = 'btn on'; }
+  else if (mode==='all')  { btn.textContent = String.fromCodePoint(128257)+' Ulangi Semua'; btn.className = 'btn on'; }
+  document.getElementById('repeatPicker').classList.remove('open');
+  showToast('Repeat: ' + btn.textContent.replace(/^\S+\s/,''));
+}
+function updateRepeatN() {
+  repeatN = Math.max(2, parseInt(document.getElementById('repNInput').value)||2);
+  if (repeatMode === 'one') document.getElementById('repeatBtn').textContent = String.fromCodePoint(128258)+' x'+repeatN;
+}
+
+/* ALBUMS */
+function _getAlbums() { return JSON.parse(localStorage.getItem('mp_albums4') || '[]'); }
+function _saveAlbums(a){ localStorage.setItem('mp_albums4', JSON.stringify(a)); }
+function createAlbum() {
+  var inp = document.getElementById('newAlbumName'), name = inp.value.trim(); if (!name) return;
+  var a = _getAlbums(); a.push({id:'alb_'+Date.now(), name:name, songIds:[]}); _saveAlbums(a);
+  inp.value=''; _applyFilter(); showToast('Album "'+name+'" dibuat!');
+}
+function deleteAlbum(id) {
+  if (!confirm('Hapus album ini? Lagu asli tidak dihapus.')) return;
+  _saveAlbums(_getAlbums().filter(function(a){return a.id!==id;}));
+  if (activeAlbumId===id) activeAlbumId=null;
+  _applyFilter(); showToast('Album dihapus.');
+}
+function openAlbum(id) {
+  activeAlbumId=id; _applyFilter();
+  if (displaySongs.length) { playTrack(0); goSec('sec-player',document.getElementById('nav-player')); }
+  else showToast('Album ini masih kosong!');
+}
+function addSongToAlbum(songId, sel) {
+  var albId=sel.value; if (!albId) return;
+  var albums=_getAlbums(), alb=albums.find(function(a){return a.id===albId;});
+  if (alb) {
+    if (alb.songIds.includes(songId)) showToast('Lagu sudah ada di album ini');
+    else { alb.songIds.push(songId); _saveAlbums(albums); _applyFilter(); showToast('Ditambahkan ke '+alb.name); }
+  }
+  sel.value='';
+}
+function removeSongFromAlbum(songId) {
+  if (!activeAlbumId) return;
+  var albums=_getAlbums(), alb=albums.find(function(a){return a.id===activeAlbumId;});
+  if (alb) { alb.songIds=alb.songIds.filter(function(s){return s!==songId;}); _saveAlbums(albums); _applyFilter(); showToast('Lagu dikeluarkan.'); }
+}
+function resetFilter() { activeAlbumId=null; _applyFilter(); }
+function _applyFilter() {
+  var albums=_getAlbums(), badge=document.getElementById('filterBadge');
+  if (activeAlbumId) {
+    var alb=albums.find(function(a){return a.id===activeAlbumId;});
+    if (alb) {
+      displaySongs=masterSongs.filter(function(s){return alb.songIds.includes(s.id);});
+      document.getElementById('filterText').innerHTML='Album aktif: <b>'+_esc(alb.name)+'</b> ('+displaySongs.length+' lagu)';
+      badge.classList.add('show');
+    } else { activeAlbumId=null; displaySongs=[].concat(masterSongs); badge.classList.remove('show'); }
+  } else { displaySongs=[].concat(masterSongs); badge.classList.remove('show'); }
+  _renderAlbumGrid(); _renderList();  _updateAndroidTips();}
+function _renderAlbumGrid() {
+  var albums=_getAlbums(), grid=document.getElementById('albumGrid');
+  grid.innerHTML='';
+  if (!albums.length) { grid.innerHTML='<div class="empty-hint" style="grid-column:span 2">Belum ada album.</div>'; return; }
+  albums.forEach(function(alb) {
+    var box=document.createElement('div');
+    box.className='album-box'+(activeAlbumId===alb.id?' active':'');
+    box.innerHTML='<div><div class="album-name">'+_esc(alb.name)+'</div><div class="album-count">'+alb.songIds.length+' lagu</div></div>'
+      +'<div class="album-actions"><span style="font-size:11px;color:var(--accent2);cursor:pointer" onclick="openAlbum(\''+alb.id+'\')">&#9654;&#65039; Putar</span>'
+      +'<span style="cursor:pointer" onclick="deleteAlbum(\''+alb.id+'\')">&#128465;&#65039;</span></div>';
+    grid.appendChild(box);
+  });
+}
+function _renderList() {
+  var area=document.getElementById('mainList'), albums=_getAlbums();
+  document.getElementById('songCount').textContent=displaySongs.length;
+  area.innerHTML='';
+  if (!displaySongs.length) { area.innerHTML='<div class="empty-hint">Daftar kosong.</div>'; return; }
+  displaySongs.forEach(function(song, idx) {
+    var card=document.createElement('div');
+    card.className='item-card'+(idx===currentIndex?' active':'');
+    var checkbox = document.createElement('input');
+    checkbox.type = 'checkbox';
+    checkbox.checked = selectedSongs.has(song.id);
+    checkbox.style.cssText = 'margin-right:10px;width:16px;height:16px;flex-shrink:0';
+    checkbox.addEventListener('change', function() { _toggleSongSelect(song.id); });
+    var info=document.createElement('div'); info.className='item-info';
+    info.onclick=function(){ playTrack(idx); goSec('sec-player',document.getElementById('nav-player')); };
+    info.innerHTML='<div class="item-title">'+(idx+1)+'. '+_esc(song.name)+'</div><div class="item-dur">'+(song.duration||'...')+'</div>';
+    var acts=document.createElement('div'); acts.className='item-actions';
+    if (songBulkMode) {
+      card.appendChild(checkbox);
+    }
+    if (!activeAlbumId && albums.length) {
+      var sel=document.createElement('select');
+      sel.style.cssText='padding:3px 5px;font-size:11px;width:80px;border-radius:6px';
+      sel.innerHTML='<option value="">+ Album</option>'+albums.map(function(a){return '<option value="'+a.id+'">'+_esc(a.name)+'</option>';}).join('');
+      (function(s, sid){ sel.onchange=function(){ addSongToAlbum(sid,s); }; })(sel, song.id);
+      acts.appendChild(sel);
+    }
+    var del=document.createElement('button');
+    if (activeAlbumId) {
+      del.className='btn'; del.style.cssText='padding:3px 7px;font-size:11px';
+      del.textContent=String.fromCodePoint(8617,65039); del.title='Keluarkan dari album';
+      (function(sid){ del.onclick=function(){ removeSongFromAlbum(sid); }; })(song.id);
+    } else {
+      del.className='btn danger'; del.style.cssText='padding:3px 7px;font-size:11px';
+      del.textContent=String.fromCodePoint(128465,65039);
+      (function(sid){ del.onclick=function(){ deleteSong(sid); }; })(song.id);
+    }
+
+    card.appendChild(info);
+    card.appendChild(acts);
+    area.appendChild(card);
+  });
+}
+
+/* =========================================================
+   appApi — DEFINISI LENGKAP SEBELUM MusicPlugins & bootPlugins
+   =========================================================
+   Semua method yang bisa dipakai oleh plugin:
+   - api.getAudio()             → elemen <audio>
+   - api.getAudioElement()      → alias
+   - api.getState()             → { currentIndex, playlist, shuffleMode, repeatMode }
+   - api.showNotification(msg)  → tampilkan toast
+   - api.setThemeVars({...})    → ubah CSS variables
+   - api.addPluginPanel(id, judul, function(container){...})
+   ========================================================= */
+var appApi = {
+  getAudio: function() { return audio; },
+  getAudioElement: function() { return audio; },
+  getState: function() { return { currentIndex:currentIndex, playlist:displaySongs, shuffleMode:shuffleMode, repeatMode:repeatMode }; },
+  showNotification: function(msg) { showToast(msg); },
+  on: function() {},
+  emit: function() {},
+  setThemeVars: function(vars) {
+    if (!vars || typeof vars !== 'object') return;
+    Object.entries(vars).forEach(function(kv) { document.documentElement.style.setProperty(kv[0], kv[1]); });
+  },
+  addPluginPanel: function(panelId, title, buildFn) {
+    var container = document.getElementById('extraContainer');
+    if (!container) return;
+    /* Hapus placeholder kosong */
+    if (container.children.length === 1 && !container.children[0].id) container.innerHTML = '';
+    /* Hapus panel lama */
+    var old = document.getElementById(panelId); if (old) old.remove();
+    var card = document.createElement('div');
+    card.id = panelId; card.className = 'panel';
+    var head = document.createElement('div');
+    head.className = 'panel-title'; head.textContent = title;
+    var body = document.createElement('div');
+    body.style.marginTop = '8px';
+    card.appendChild(head); card.appendChild(body);
+    container.appendChild(card);
+    if (typeof buildFn === 'function') {
+      try { buildFn(body); }
+      catch(e) { body.textContent = 'Plugin UI error: ' + e.message; console.error('[Plugin panel error]', e); }
+    }
+  }
+};
+
+/* Expose ke window agar plugin bisa akses lewat window.appApi juga */
+window.appApi = appApi;
+
+/* window.MusicPlugins — didefinisikan SETELAH appApi */
+window.MusicPlugins = {
+  registry: [],
+  register: function(def) {
+    if (!def) return;
+    this.registry.push(def);
+    if (typeof def.init === 'function') {
+      try {
+        def.init(appApi);
+        console.log('[Plugin aktif]', def.name || def.id);
+        showToast('Plugin aktif: ' + (def.name || def.id));
+      } catch(e) {
+        console.error('[Plugin init error]', def.name||def.id, e);
+        showToast('Plugin error: ' + (def.name||def.id));
+      }
+    }
+  }
+};
+
+/* PLUGIN SYSTEM — IndexedDB */
+function _execPlugin(code, name) {
+  try {
+    /*
+     * appApi dipass sebagai parameter PERTAMA sehingga di dalam kode plugin
+     * bisa pakai 'appApi' langsung tanpa window.
+     * window.MusicPlugins juga tersedia karena sudah diset di atas.
+     */
+    var fn = new Function('appApi', '"use strict";\n' + code);
+    fn(appApi);
+    return true;
+  } catch(e) {
+    console.error('[_execPlugin error]', name, e);
+    _addDiagnostic('Plugin gagal dimuat: ' + name + ' — ' + e.message + '. Pastikan plugin menggunakan skrip JavaScript biasa tanpa import/export atau top-level await, dan memanggil window.MusicPlugins.register({ ... }).');
+    showToast('Plugin gagal: ' + name + ' — ' + e.message);
+    _showPluginInfo(true);
+    return false;
+  }
+}
+
+function _bootPlugins() {
+  if (!db) {
+    _addDiagnostic('Database plugin belum siap saat melakukan boot.');
+    return;
+  }
+  var req = db.transaction('plugins','readonly').objectStore('plugins').getAll();
+  req.onsuccess = function(e) {
+      var plugins = e.target.result || [];
+      currentPlugins = plugins;
+      if (!plugins.length) {
+        _addDiagnostic('Tidak ada plugin disimpan. Upload .js plugin menggunakan tombol upload. Pastikan file plugin memanggil window.MusicPlugins.register({id, name, init}).');
+      }
+      plugins.forEach(function(p) { _execPlugin(p.code, p.name); });
+      _renderPluginList(plugins);
+    };
+  req.onerror = function(e) {
+      _addDiagnostic('Gagal memuat plugin dari IndexedDB: ' + (e.target.error && e.target.error.message ? e.target.error.message : 'error tidak diketahui') + '. Solusi: refresh halaman, tutup tab lain, atau periksa apakah browser memblokir penyimpanan.');
+      _renderPluginList([]);
+    };
+}
+
+async function uploadPlugin(fileList) {
+  if (!db) { showToast('Database belum siap'); _addDiagnostic('Tidak dapat memasang plugin karena IndexedDB belum siap. Muat ulang atau gunakan browser lain.'); return; }
+  var jsFiles = Array.from(fileList).filter(function(f) { return f.name.endsWith('.js'); });
+  if (!jsFiles.length) { showToast('Tidak ada file .js valid'); _addDiagnostic('File yang dipilih bukan file .js. Pastikan file plugin berekstensi .js dan merupakan skrip JavaScript biasa.'); return; }
+
+  var plugins = [];
+  for (var i = 0; i < jsFiles.length; i++) {
+    var f = jsFiles[i];
+    try {
+      var code = await f.text();
+      plugins.push({name: f.name, code: code});
+    } catch(e) {
+      _addDiagnostic('Gagal membaca file plugin: ' + f.name + ' — ' + e.message + '. Pastikan file dapat dibaca oleh browser.');
+      showToast('Gagal membaca plugin: ' + f.name);
+      _showPluginInfo(true);
+    }
+  }
+  if (!plugins.length) return;
+
+  var tx = db.transaction('plugins','readwrite');
+  var store = tx.objectStore('plugins');
+  tx.onerror = function(e) {
+    showToast('Gagal menyimpan plugin.');
+    _addDiagnostic('Gagal menyimpan plugin ke IndexedDB: ' + (e.target.error && e.target.error.message ? e.target.error.message : 'error tidak diketahui') + '. Coba ulangi atau gunakan browser dengan izin penyimpanan aktif.');
+    _showPluginInfo(true);
+  };
+  tx.onabort = function(e) {
+    showToast('Transaksi plugin dibatalkan.');
+    _addDiagnostic('Transaksi penyimpanan plugin dibatalkan. Tutup tab lain atau refresh browser jika terjadi batasan penyimpanan.');
+    _showPluginInfo(true);
+  };
+
+  plugins.forEach(function(p) {
+    var id = 'plg_' + Date.now() + '_' + Math.random().toString(36).slice(2,6);
+    store.put({id: id, name: p.name, code: p.code});
+  });
+
+  tx.oncomplete = function() { showToast('Plugin dipasang! Memuat ulang...'); setTimeout(function(){ location.reload(); }, 700); };
+  document.getElementById('pluginInput').value = '';
+}
+
+function deletePlugin(id) {
+  if (!confirm('Hapus plugin ini? Halaman akan dimuat ulang.')) return;
+  var tx = db.transaction('plugins','readwrite');
+  tx.objectStore('plugins').delete(id);
+  tx.oncomplete = function() { location.reload(); };
+}
+
+function _renderPluginList(plugins) {
+  var area = document.getElementById('pluginList');
+  area.innerHTML = '';
+  if (!plugins.length) { area.innerHTML = '<div class="empty-hint">Belum ada plugin terpasang.</div>'; return; }
+  plugins.forEach(function(p) {
+    var card = document.createElement('div'); card.className='item-card';
+    var checkbox = document.createElement('input');
+    checkbox.type='checkbox';
+    checkbox.checked = selectedPlugins.has(p.id);
+    checkbox.style.cssText = 'margin-right:10px;width:16px;height:16px;flex-shrink:0';
+    checkbox.addEventListener('change', function() { _togglePluginSelect(p.id); });
+    if (pluginBulkMode) card.appendChild(checkbox);
+    var info = document.createElement('div');
+    info.style.cssText = 'font-size:12px;flex:1';
+    info.textContent = String.fromCodePoint(128299) + ' ' + p.name;
+    card.appendChild(info);
+    var d = document.createElement('button');
+    d.className='btn danger'; d.style.cssText='padding:4px 8px;font-size:11px';
+    d.textContent = String.fromCodePoint(128465,65039);
+    d.title='Hapus plugin';
+    (function(pid){ d.onclick=function(){ deletePlugin(pid); }; })(p.id);
+    card.appendChild(d);
+    area.appendChild(card);
+  });
+  _updateBulkButtons();
+}
+
+window.addEventListener('load', function() {
+  _renderDiagnostics();
+});
+
+/* PWA */
+var _deferredInstall = null;
+window.addEventListener('beforeinstallprompt', function(e) {
+  e.preventDefault(); _deferredInstall = e;
+  document.getElementById('installBtn').style.display = 'inline-flex';
+});
+function triggerInstall() {
+  if (_deferredInstall) { _deferredInstall.prompt(); _deferredInstall = null; }
+  else showToast('Gunakan: Share -> Tambahkan ke Layar Utama');
+}
+
+/* UTILS */
+function _esc(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+</script>
+</body>
+</html>
