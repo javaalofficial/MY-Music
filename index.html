@@ -136,7 +136,7 @@
       </div>
     </div>
     <div class="panel" style="padding:10px 14px">
-      <div id="androidTips" style="display:none;font-size:11px;color:var(--muted);display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap">
+      <div id="androidTips" style="display:none;font-size:11px;color:var(--muted);justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap">
         <span>💡 Android Chrome: ketuk ⋮ &rarr; <b>Tambahkan ke layar utama</b></span>
         <button class="btn" id="installBtn" onclick="triggerInstall()" style="display:none">&#11015;&#65039; Install</button>
       </div>
@@ -780,6 +780,7 @@ function _renderList() {
       del.textContent=String.fromCodePoint(128465,65039);
       (function(sid){ del.onclick=function(){ deleteSong(sid); }; })(song.id);
     }
+    acts.appendChild(del);
 
     card.appendChild(info);
     card.appendChild(acts);
