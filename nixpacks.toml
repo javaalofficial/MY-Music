@@ -1,0 +1,5 @@
+# Konfigurasi Railway/Nixpacks
+# Menginstall ffmpeg agar yt-dlp bisa konversi audio
+
+[phases.setup]
+nixPkgs = ["ffmpeg", "python3"]
