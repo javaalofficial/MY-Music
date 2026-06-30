@@ -220,7 +220,7 @@ window.MusicPlugins.register({
               <span style="font-weight: 600;">🕒 Slider Delay Linier Statis:</span>
               <span id="v29-delay-val" style="font-weight: 700; color: #f1c40f;">0.0s</span>
             </div>
-            <input type="range" id="v29-delay-slider" min="-30.0" max="30.0" step="0.5" value="0.0" style="width: 100%; accent-color: #f1c40f; cursor: pointer;" title="Geser untuk mengatur pergeseran linier detik lirik. (+) menunda audio yapping, (-) memajukan audio speed-up">
+            <input type="range" id="v29-delay-slider" min="-300.0" max="300.0" step="0.5" value="0.0" style="width: 100%; accent-color: #f1c40f; cursor: pointer;" title="Geser untuk mengatur pergeseran linier detik lirik. (+) menunda audio yapping, (-) memajukan audio speed-up">
             
             <div style="display: flex; gap: 6px; margin-top: 2px;">
               <button id="v29-calib-onfly" style="flex:1; background: #f1c40f; color: #000; border: none; font-weight: 700; font-size: 10px; padding: 6px; border-radius: 6px; cursor: pointer;" title="Klik TEPAT saat vokal penyanyi mulai berbunyi untuk mengukur gap intro audio">⚡ KALIBRASI AI (On-The-Fly)</button>
@@ -235,7 +235,7 @@ window.MusicPlugins.register({
               <span>⏩ Antisipasi Jeda (%):</span>
               <span id="v28-anticipate-val" style="font-weight: 700; color: var(--accent2);">${currentAnticipatePct}%</span>
             </div>
-            <input type="range" id="v28-anticipate-slider" min="0" max="75" step="5" value="${currentAnticipatePct}" style="width: 100%; accent-color: var(--accent2); cursor: pointer;" title="Pengaturan persentase antisipasi gap antar baris">
+            <input type="range" id="v28-anticipate-slider" min="-200" max="200" step="1" value="${currentAnticipatePct}" style="width: 100%; accent-color: var(--accent2); cursor: pointer;" title="Pengaturan persentase antisipasi gap antar baris">
           </div>
 
           <div style="display: flex; flex-direction: column; gap: 6px;">
@@ -341,7 +341,7 @@ window.MusicPlugins.register({
       
       let calculatedDelay = t_audio - t_LRC;
       // Batasi secara ketat dalam batas aman -30.0s s/d +30.0s
-      calculatedDelay = Math.max(-30, Math.min(30, calculatedDelay));
+      calculatedDelay = Math.max(-300, Math.min(300, calculatedDelay));
       
       userSessionAdjustment = calculatedDelay - defaultDelay;
       delaySlider.value = calculatedDelay.toFixed(1);
@@ -995,17 +995,24 @@ window.MusicPlugins.register({
         let targetTime = syncedData[i].time;
 
         // KALKULASI ANTISIPASI JEDA BAWAAN
+        if (currentAnticipatePct !== 0 && i > 0) {
+        const gap = targetTime - (syncedData[i-1].time + activeDelay);
+        if (gap > 0.8) {
+        // Menghitung kompensasi detik berdasarkan persentase positif/negatif
+        let anticipationSeconds = gap * (currentAnticipatePct / 200);
+    
+        // Pembatasan aman agar visual pergerakan lirik tetap terkendali
         if (currentAnticipatePct > 0) {
-          const prevTime = i > 0 ? syncedData[i - 1].time : 0;
-          const gap = targetTime - prevTime;
-          
-          if (gap > 0.5) { 
-            let anticipationSeconds = (gap * (currentAnticipatePct / 100)) * speed;
-            const maxCap = Math.min(3.0, gap - 0.2); 
-            anticipationSeconds = Math.min(anticipationSeconds, maxCap);
-            targetTime = targetTime - anticipationSeconds;
-          }
-        }
+        const maxCap = Math.min(3.0, gap - 0.2);
+       anticipationSeconds = Math.min(anticipationSeconds, maxCap);
+       } else {
+       // Jika minus, batasi penundaan maksimal mundur 3 detik agar tidak terlalu jauh melompat
+        anticipationSeconds = Math.max(-3.0, anticipationSeconds);
+     }
+    
+      targetTime = targetTime - anticipationSeconds;
+      }
+    }
 
         if (evaluationTime >= targetTime) {
           activeIdx = i;
